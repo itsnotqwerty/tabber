@@ -1,0 +1,36 @@
+MIT License
+
+Copyright (c) 2026 Samuel Roux
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+PRIVACY AND LEGAL DISCLAIMER
+
+Systematically tracking or locating individuals without their explicit consent
+can violate privacy laws (e.g., GDPR, CCPA, U.S. state wiretap/stalking
+statutes, platform Terms of Service) and may constitute a criminal offence in
+many jurisdictions. This Software is intended solely for lawful research on
+publicly available information about public figures. Users are solely
+responsible for ensuring that their use of this Software complies with all
+applicable laws and regulations. By using this Software, you represent and
+warrant that you will not use it to track, locate, surveil, or harass any
+individual in violation of applicable law.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE. THE AUTHORS EXPRESSLY DISCLAIM ALL LIABILITY FOR ANY UNLAWFUL,
+HARMFUL, OR UNETHICAL USE OF THIS SOFTWARE BY ANY THIRD PARTY, AND SHALL NOT
+BE HELD RESPONSIBLE OR SUBJECT TO LEGAL ACTION FOR THE CONDUCT OR ACTIONS OF
+ANY USER OR DOWNSTREAM RECIPIENT OF THIS SOFTWARE.
