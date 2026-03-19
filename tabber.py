@@ -113,9 +113,12 @@ def config_show() -> None:
 
 
 if __name__ == "__main__":
-    # Allow `python tabber.py "Name"` as shorthand for `python tabber.py lookup "Name"`.
-    # If the first positional argument is not a known subcommand, inject "lookup".
-    _known_subcommands = {"lookup", "config", "--help", "-h", "--version"}
-    if len(sys.argv) > 1 and sys.argv[1] not in _known_subcommands and not sys.argv[1].startswith("-"):
+    # Allow `python tabber.py "Name"` (and `python tabber.py -v "Name"` etc.) as
+    # shorthand for `python tabber.py lookup "Name"`.  Find the first non-flag
+    # positional argument; if it is not a known subcommand, inject "lookup" at
+    # position 1 so all flags are forwarded to the lookup command.
+    _known_subcommands = {"lookup", "config"}
+    _positional_args = [a for a in sys.argv[1:] if not a.startswith("-")]
+    if _positional_args and _positional_args[0] not in _known_subcommands:
         sys.argv.insert(1, "lookup")
     cli()
