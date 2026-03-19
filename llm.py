@@ -1,27 +1,17 @@
-"""Thin LLM wrapper — dispatches to OpenAI or Anthropic based on config."""
+"""Thin LLM wrapper — calls OpenAI (gpt-4o)."""
 from __future__ import annotations
+import openai
 
 
 def complete(prompt: str, system: str = "") -> str:
-    """Send a prompt to the configured LLM and return the response text."""
+    """Send a prompt to OpenAI and return the response text."""
     import config as cfg_module
 
     cfg = cfg_module.load()
-    provider = cfg.get("llm_provider", "openai")
-
-    if provider == "openai":
-        return _openai(prompt, system, cfg)
-    if provider == "anthropic":
-        return _anthropic(prompt, system, cfg)
-    raise ValueError(
-        f"Unknown llm_provider '{provider}'. "
-        "Run: python tabber.py config set llm_provider openai|anthropic"
-    )
+    return _openai(prompt, system, cfg)
 
 
 def _openai(prompt: str, system: str, cfg: dict) -> str:
-    import openai
-
     api_key = cfg.get("openai_api_key")
     if not api_key:
         raise RuntimeError(
@@ -38,25 +28,7 @@ def _openai(prompt: str, system: str, cfg: dict) -> str:
         messages=messages,
         temperature=0.2,
     )
-    return response.choices[0].message.content
+    return response.choices[0].message.content # type: ignore
 
 
-def _anthropic(prompt: str, system: str, cfg: dict) -> str:
-    import anthropic
 
-    api_key = cfg.get("anthropic_api_key")
-    if not api_key:
-        raise RuntimeError(
-            "anthropic_api_key is not set. "
-            "Run: python tabber.py config set anthropic_api_key YOUR_KEY"
-        )
-    client = anthropic.Anthropic(api_key=api_key)
-    kwargs: dict = {
-        "model": "claude-opus-4-5",
-        "max_tokens": 1024,
-        "messages": [{"role": "user", "content": prompt}],
-    }
-    if system:
-        kwargs["system"] = system
-    response = client.messages.create(**kwargs)
-    return response.content[0].text

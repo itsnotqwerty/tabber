@@ -10,14 +10,12 @@ CONFIG_FILE = CONFIG_DIR / "config.json"
 # Keys whose values are masked in `config show`
 _SECRET_KEYS = {
     "openai_api_key",
-    "anthropic_api_key",
     "twitter_bearer_token",
     "instagram_access_token",
     "reddit_client_secret",
 }
 
 _DEFAULTS: dict[str, Any] = {
-    "llm_provider": "openai",
     "max_iterations": 3,
 }
 

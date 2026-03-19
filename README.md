@@ -35,19 +35,16 @@ python tabber.py config show
 
 | Key | Default | Description |
 |---|---|---|
-| `llm_provider` | `openai` | LLM backend: `openai` or `anthropic` |
 | `max_iterations` | `3` | Max feedback loop iterations |
-| `openai_api_key` | — | Required when `llm_provider=openai` |
-| `anthropic_api_key` | — | Required when `llm_provider=anthropic` |
+| `openai_api_key` | — | Required to call the LLM |
 | `twitter_bearer_token` | — | Enables the Twitter gatherer |
 | `instagram_access_token` | — | Enables the Instagram gatherer |
 | `reddit_client_id` | — | Required (with secret) for Reddit gatherer |
 | `reddit_client_secret` | — | Required (with ID) for Reddit gatherer |
 
-At minimum, set an API key for your chosen LLM provider:
+At minimum, set your OpenAI API key:
 
 ```bash
-python tabber.py config set llm_provider openai
 python tabber.py config set openai_api_key sk-...
 ```
 
@@ -80,12 +77,9 @@ The output panel shows the inferred **location**, **confidence** (green ≥70%, 
 
 Gatherers that lack the required credentials are skipped automatically. The tool works with only the unauthenticated gatherers (News, Wikipedia, Events), but more sources improve accuracy.
 
-## LLM Providers
+## LLM
 
-| Provider | Model |
-|---|---|
-| OpenAI (default) | `gpt-4o` |
-| Anthropic | `claude-opus-4-5` |
+Tabber uses OpenAI `gpt-4o`.
 
 ## Project Structure
 
