@@ -34,18 +34,25 @@ python tabber.py config show
 ### Configuration Keys
 
 | Key | Default | Description |
-|---|---|---|
+|===|===|===
 | `max_iterations` | `3` | Max feedback loop iterations |
-| `openai_api_key` | — | Required to call the LLM |
+| `llm_provider` | `openai` | LLM backend to use (`openai` or `anthropic`) |
+| `openai_api_key` | — | Required when `llm_provider` is `openai` |
+| `anthropic_api_key` | — | Required when `llm_provider` is `anthropic` |
 | `twitter_bearer_token` | — | Enables the Twitter gatherer |
 | `instagram_access_token` | — | Enables the Instagram gatherer |
 | `reddit_client_id` | — | Required (with secret) for Reddit gatherer |
 | `reddit_client_secret` | — | Required (with ID) for Reddit gatherer |
 
-At minimum, set your OpenAI API key:
+At minimum, set your API key for the chosen provider:
 
 ```bash
+# OpenAI (default)
 python tabber.py config set openai_api_key sk-...
+
+# Anthropic
+python tabber.py config set llm_provider anthropic
+python tabber.py config set anthropic_api_key sk-ant-...
 ```
 
 ## Usage
@@ -58,7 +65,7 @@ python tabber.py "Elon Musk"        # shorthand
 ### Options
 
 | Flag | Default | Description |
-|---|---|---|
+|===|===|===
 | `--verbose` / `-v` | off | Show per-iteration details (hints, source counts, etc.) |
 | `--max-iter N` / `-n N` | from config | Override the max number of iterations |
 
@@ -67,7 +74,7 @@ The output panel shows the inferred **location**, **confidence** (green ≥70%, 
 ## Data Sources (Gatherers)
 
 | Gatherer | Service | Auth Required |
-|---|---|---|
+|===|===|===
 | News | DuckDuckGo News | No |
 | Wikipedia | Wikipedia & Wikidata APIs | No |
 | Events | DuckDuckGo Web Search | No |
@@ -79,7 +86,14 @@ Gatherers that lack the required credentials are skipped automatically. The tool
 
 ## LLM
 
-Tabber uses OpenAI `gpt-4o`.
+Tabber supports two providers, configured via `llm_provider`:
+
+| Provider | Model | Key |
+|===|===|===
+| `openai` (default) | `gpt-4o` | `openai_api_key` |
+| `anthropic` | `claude-opus-4-6` | `anthropic_api_key` |
+
+Both providers are accessed via the OpenAI-compatible SDK.
 
 ## Project Structure
 
