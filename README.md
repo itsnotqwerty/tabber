@@ -33,16 +33,25 @@ python tabber.py config show
 
 ### Configuration Keys
 
-| Key | Default | Description |
-|===|===|===
-| `max_iterations` | `3` | Max feedback loop iterations |
-| `llm_provider` | `openai` | LLM backend to use (`openai` or `anthropic`) |
-| `openai_api_key` | — | Required when `llm_provider` is `openai` |
-| `anthropic_api_key` | — | Required when `llm_provider` is `anthropic` |
-| `twitter_bearer_token` | — | Enables the Twitter gatherer |
-| `instagram_access_token` | — | Enables the Instagram gatherer |
-| `reddit_client_id` | — | Required (with secret) for Reddit gatherer |
-| `reddit_client_secret` | — | Required (with ID) for Reddit gatherer |
++--------------------------+----------+----------------------------------------------+
+| Key                      | Default  | Description                                  |
++==========================+==========+==============================================+
+| `max_iterations`         | `3`      | Max feedback loop iterations                 |
++--------------------------+----------+----------------------------------------------+
+| `llm_provider`           | `openai` | LLM backend to use (`openai` or `anthropic`) |
++--------------------------+----------+----------------------------------------------+
+| `openai_api_key`         | —        | Required when `llm_provider` is `openai`     |
++--------------------------+----------+----------------------------------------------+
+| `anthropic_api_key`      | —        | Required when `llm_provider` is `anthropic`  |
++--------------------------+----------+----------------------------------------------+
+| `twitter_bearer_token`   | —        | Enables the Twitter gatherer                 |
++--------------------------+----------+----------------------------------------------+
+| `instagram_access_token` | —        | Enables the Instagram gatherer               |
++--------------------------+----------+----------------------------------------------+
+| `reddit_client_id`       | —        | Required (with secret) for Reddit gatherer   |
++--------------------------+----------+----------------------------------------------+
+| `reddit_client_secret`   | —        | Required (with ID) for Reddit gatherer       |
++--------------------------+----------+----------------------------------------------+
 
 At minimum, set your API key for the chosen provider:
 
@@ -64,23 +73,33 @@ python tabber.py "Elon Musk"        # shorthand
 
 ### Options
 
-| Flag | Default | Description |
-|===|===|===
-| `--verbose` / `-v` | off | Show per-iteration details (hints, source counts, etc.) |
-| `--max-iter N` / `-n N` | from config | Override the max number of iterations |
++-------------------------+-------------+---------------------------------------------------------+
+| Flag                    | Default     | Description                                             |
++=========================+=============+=========================================================+
+| `--verbose` / `-v`      | off         | Show per-iteration details (hints, source counts, etc.) |
++-------------------------+-------------+---------------------------------------------------------+
+| `--max-iter N` / `-n N` | from config | Override the max number of iterations                   |
++-------------------------+-------------+---------------------------------------------------------+
 
 The output panel shows the inferred **location**, **confidence** (green ≥70%, yellow ≥40%, red <40%), **reasoning**, and **sources**.
 
 ## Data Sources (Gatherers)
 
-| Gatherer | Service | Auth Required |
-|===|===|===
-| News | DuckDuckGo News | No |
-| Wikipedia | Wikipedia & Wikidata APIs | No |
-| Events | DuckDuckGo Web Search | No |
-| Twitter | Twitter API v2 | `twitter_bearer_token` |
-| Reddit | Reddit API | `reddit_client_id` + `reddit_client_secret` |
-| Instagram | Instagram Graph API | `instagram_access_token` |
++-----------+---------------------------+---------------------------------------------+
+| Gatherer  | Service                   | Auth Required                               |
++===========+===========================+=============================================+
+| News      | DuckDuckGo News           | No                                          |
++-----------+---------------------------+---------------------------------------------+
+| Wikipedia | Wikipedia & Wikidata APIs | No                                          |
++-----------+---------------------------+---------------------------------------------+
+| Events    | DuckDuckGo Web Search     | No                                          |
++-----------+---------------------------+---------------------------------------------+
+| Twitter   | Twitter API v2            | `twitter_bearer_token`                      |
++-----------+---------------------------+---------------------------------------------+
+| Reddit    | Reddit API                | `reddit_client_id` + `reddit_client_secret` |
++-----------+---------------------------+---------------------------------------------+
+| Instagram | Instagram Graph API       | `instagram_access_token`                    |
++-----------+---------------------------+---------------------------------------------+
 
 Gatherers that lack the required credentials are skipped automatically. The tool works with only the unauthenticated gatherers (News, Wikipedia, Events), but more sources improve accuracy.
 
@@ -88,10 +107,13 @@ Gatherers that lack the required credentials are skipped automatically. The tool
 
 Tabber supports two providers, configured via `llm_provider`:
 
-| Provider | Model | Key |
-|===|===|===
-| `openai` (default) | `gpt-4o` | `openai_api_key` |
-| `anthropic` | `claude-opus-4-6` | `anthropic_api_key` |
++--------------------+-------------------+---------------------+
+| Provider           | Model             | Key                 |
++====================+===================+=====================+
+| `openai` (default) | `gpt-4o`          | `openai_api_key`    |
++--------------------+-------------------+---------------------+
+| `anthropic`        | `claude-opus-4-6` | `anthropic_api_key` |
++--------------------+-------------------+---------------------+
 
 Both providers are accessed via the OpenAI-compatible SDK.
 
