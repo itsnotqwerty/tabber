@@ -15,7 +15,7 @@ An OSINT CLI tool that determines the most likely current or recent physical loc
 ## Installation
 
 ```bash
-git clone https://github.com/yourname/tabber.git
+git clone https://github.com/itsnotqwerty/tabber.git
 cd tabber
 python -m venv .venv
 source .venv/bin/activate
