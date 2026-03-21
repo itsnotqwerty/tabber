@@ -58,11 +58,13 @@ def gather(
                 results.append(result)
                 if progress is not None:
                     count = len(result.items)
+                    text_len = len(result.raw_text)
                     progress.advance(gather_task)
                     if count:
                         progress.console.log(
                             f"  [bold]{gname}[/bold] — "
                             f"[green]{count} result{'s' if count != 1 else ''}[/green]"
+                            f" ({text_len} chars)"
                         )
                     else:
                         progress.console.log(
@@ -70,7 +72,10 @@ def gather(
                         )
                 elif verbose:
                     import click
-                    click.echo(f"  [{gname}] {len(result.items)} items gathered")
+                    click.echo(
+                        f"  [{gname}] {len(result.items)} items, "
+                        f"{len(result.raw_text)} chars of raw_text"
+                    )
             except Exception as exc:
                 if progress is not None:
                     progress.advance(gather_task)

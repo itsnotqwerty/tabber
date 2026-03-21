@@ -24,19 +24,25 @@ class EventsGatherer(BaseGatherer):
             f"{profile.name} tour schedule concert venue city",
         ]
 
-        try:
-            with DDGS() as ddgs:
-                for q in queries:
-                    for r in ddgs.text(q, max_results=8):
-                        entry = {
-                            "title": r.get("title", ""),
-                            "body": r.get("body", ""),
-                            "url": r.get("href", ""),
-                        }
-                        items.append(entry)
-                        raw_parts.append(f"{entry['title']}: {entry['body']}")
-        except Exception:
-            pass
+        for attempt in range(2):
+            try:
+                with DDGS() as ddgs:
+                    for q in queries:
+                        for r in ddgs.text(q, max_results=8):
+                            entry = {
+                                "title": r.get("title", ""),
+                                "body": r.get("body", ""),
+                                "url": r.get("href", ""),
+                            }
+                            items.append(entry)
+                            raw_parts.append(f"{entry['title']}: {entry['body']}")
+            except Exception:
+                pass
+            if items:
+                break
+            if attempt == 0:
+                import time
+                time.sleep(2)
 
         return GathererResult(
             source_name=self.name,

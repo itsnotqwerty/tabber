@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -16,10 +18,16 @@ class GathererResult(BaseModel):
     raw_text: str = ""
 
 
+class SignalEvaluation(BaseModel):
+    confidence: float  # 0.0 – 1.0
+    reason: str
+
+
 class OSINTBundle(BaseModel):
     person: PersonProfile
     results: list[GathererResult] = []
     iteration: int = 0
+    signal_evaluation: Optional[SignalEvaluation] = None
 
 
 class LocationResult(BaseModel):

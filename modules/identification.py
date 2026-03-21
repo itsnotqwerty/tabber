@@ -15,7 +15,7 @@ import json
 from typing import Optional
 
 import llm
-from models import OSINTBundle, PersonProfile
+from models import OSINTBundle, PersonProfile, SignalEvaluation
 
 _SYS_DISAMBIGUATE = (
     "You are an intelligence research assistant. "
@@ -31,7 +31,9 @@ _SYS_HINTS = (
 
 _SYS_EVALUATE = (
     "You are an intelligence analyst specialising in OSINT. "
-    "Evaluate whether gathered data contains enough recent location signal. "
+    "Score how confident you are that the gathered data is sufficient to determine "
+    "where this person is or has recently been. Known residences, upcoming events, "
+    "recent travel mentions, and confirmed public appearances all contribute positively. "
     "Respond ONLY with a valid JSON object."
 )
 
@@ -90,22 +92,95 @@ Example: ["visited Texas", "appearance NYC", "conference Dubai", "spotted London
     return hints if isinstance(hints, list) else []
 
 
-def _has_enough_signal(bundle: OSINTBundle) -> bool:
+def _generate_verification_hints(
+    profile: PersonProfile, evaluation: SignalEvaluation
+) -> list[str]:
+    prompt = f"""You are verifying a suspected location for an intelligence target.
+
+Person: {profile.name}
+Suspected location signal: {evaluation.reason}
+
+Generate 5 targeted search query strings to VERIFY or CONFIRM the suspected location
+with additional independent evidence. Focus on:
+- Direct sightings or confirmed appearances at that specific place
+- Recent news datelines from that location
+- Official schedules, announcements, or events tied to that place
+- Confirmed locations of events the person is known to be attending
+
+Return a JSON array of exactly 5 short search hint strings.
+Example: ["confirmed Austin March 2026", "Gigafactory Texas sighting", "SpaceX Boca Chica appearance", "Superbowl 2026 location", "Elon Musk conference Texas"]"""
+
+    response = llm.complete(prompt, system=_SYS_HINTS)
+    hints = _parse_json(response)
+    return hints if isinstance(hints, list) else []
+
+
+def _evaluate_signal(
+    bundle: OSINTBundle, verbose: bool = False, progress=None
+) -> SignalEvaluation:
+    def _log(msg: str) -> None:
+        if not verbose:
+            return
+        if progress is not None:
+            progress.console.log(msg)
+        else:
+            import click
+            click.echo(msg)
+
     all_text = "\n".join(r.raw_text for r in bundle.results if r.raw_text)
+
+    _log(
+        f"[signal-eval] all_text length: {len(all_text)} chars"
+        + (f", preview: {all_text[:200]!r}" if all_text else "")
+    )
+
     if not all_text.strip():
-        return False
+        _log("[signal-eval] Early return confidence=0 — no gathered text at all.")
+        return SignalEvaluation(confidence=0.0, reason="No gathered text")
 
     prompt = f"""Person: {bundle.person.name}
 OSINT data (iteration {bundle.iteration}):
-{all_text[:3000]}
+{all_text[:6000]}
 
-Is there enough location information here to determine this person's most recent or current physical location with reasonable confidence?
+Score your confidence (0.0–1.0) that this data is sufficient to determine where
+this person is or has recently been. Known residences, upcoming scheduled events,
+recent travel mentions, and confirmed public appearances all count.
 
-Respond with JSON: {{"sufficient": true/false, "reason": "brief explanation"}}"""
+Respond with JSON: {{"confidence": <float 0.0-1.0>, "reason": "brief explanation"}}
+Example: {{"confidence": 0.87, "reason": "Multiple recent articles place the subject in London."}}"""
 
     response = llm.complete(prompt, system=_SYS_EVALUATE)
-    data = _parse_json(response)
-    return bool(data.get("sufficient", False))
+
+    _log(f"[signal-eval] LLM raw response: {response!r}")
+
+    try:
+        data = _parse_json(response)
+    except (json.JSONDecodeError, ValueError) as exc:
+        _log(f"[signal-eval] JSON parse failed ({exc}); raw: {response!r}")
+        # Substantial text present — assume workable confidence rather than burn another iteration.
+        assumed = 0.85 if len(all_text) > 500 else 0.0
+        return SignalEvaluation(
+            confidence=assumed,
+            reason=f"LLM response unparseable; confidence assumed from text volume ({len(all_text)} chars)",
+        )
+
+    if "confidence" not in data:
+        _log(
+            f"[signal-eval] 'confidence' key missing from response; "
+            f"got keys: {list(data.keys())}"
+        )
+        return SignalEvaluation(
+            confidence=0.0,
+            reason=f"Unexpected LLM response keys: {list(data.keys())}",
+        )
+
+    raw_conf = float(data["confidence"])
+    # Normalise in case the LLM returns 0–100 despite instructions.
+    if raw_conf > 1.0:
+        raw_conf /= 100.0
+    confidence = max(0.0, min(1.0, raw_conf))
+
+    return SignalEvaluation(confidence=confidence, reason=str(data.get("reason", "")))
 
 
 def _spinner_start(progress, description: str):
@@ -154,17 +229,17 @@ def run(
     bundle: Optional[OSINTBundle] = None
 
     for i in range(max_iterations):
-        iter_label = f"iter {i + 1}/{max_iterations}"
+        # iter_label = f"iter {i + 1}/{max_iterations}"
 
         # --- Generate hints ---
-        htask = _spinner_start(progress, f"Generating search hints ({iter_label})...")
+        htask = _spinner_start(progress, f"Generating search hints...")
         if htask is None and verbose:
             import click
             click.echo(f"\n[loop {i + 1}/{max_iterations}] Generating query hints...")
 
         hints = _generate_hints(profile, bundle)
 
-        _spinner_done(progress, htask, f"[green]✓[/green] Search hints ready ({iter_label})")
+        _spinner_done(progress, htask, f"[green]✓[/green] Search hints ready")
         if htask is None and verbose:
             import click
             click.echo(f"  hints: {hints}")
@@ -178,30 +253,63 @@ def run(
         )
 
         # --- Evaluate signal ---
-        etask = _spinner_start(progress, f"Evaluating signal ({iter_label})...")
+        etask = _spinner_start(progress, f"Evaluating signal...")
         if etask is None and verbose:
             import click
             click.echo(f"[loop {i + 1}/{max_iterations}] Evaluating signal...")
 
-        sufficient = _has_enough_signal(bundle)
+        evaluation = _evaluate_signal(bundle, verbose=verbose, progress=progress)
+        bundle.signal_evaluation = evaluation
+        conf_pct = f"{evaluation.confidence:.0%}"
 
-        if sufficient:
+        if evaluation.confidence >= 0.80:
             _spinner_done(
                 progress, etask,
-                f"[green]✓[/green] Sufficient location signal found ({iter_label})",
+                f"[green]✓[/green] Signal confidence {conf_pct} — sufficient",
             )
             if etask is None and verbose:
                 import click
-                click.echo(f"[identification] Sufficient signal at iteration {i + 1}. Exiting loop.")
-            break
+                click.echo(f"[identification] Signal confidence {conf_pct} at iteration {i + 1}. Verifying...")
+
+            # --- Verification pass ---
+            vtask = _spinner_start(progress, "Verifying suspected location...")
+            if vtask is None and verbose:
+                import click
+                click.echo("[identification] Running verification gather...")
+
+            verification_hints = _generate_verification_hints(profile, evaluation)
+            if verbose and progress is not None:
+                progress.console.log(f"  verification hints: {verification_hints}")
+            elif vtask is None and verbose:
+                import click
+                click.echo(f"  verification hints: {verification_hints}")
+
+            verification_bundle = information_gathering.gather(
+                profile,
+                verification_hints,
+                iteration=i + 2,
+                verbose=verbose,
+                progress=progress,
+            )
+            bundle.results.extend(verification_bundle.results)
+            
+            evaluation = _evaluate_signal(bundle, verbose=verbose, progress=progress)
+            bundle.signal_evaluation = evaluation
+            
+            if evaluation.confidence >= 0.85:
+                _spinner_done(progress, vtask, "[green]✓[/green] Location verified")
+                if vtask is None and verbose:
+                    import click
+                    click.echo("[identification] Verification complete. Exiting loop.")
+                break
         else:
             _spinner_done(
                 progress, etask,
-                f"[yellow]↻[/yellow] Signal insufficient — refining ({iter_label})",
+                f"[yellow]↻[/yellow] Signal confidence {conf_pct} — refining",
             )
             if etask is None and verbose:
                 import click
-                click.echo("[identification] Signal insufficient — refining...")
+                click.echo(f"[identification] Signal confidence {conf_pct} — refining...")
 
     # Return last bundle (may be None only if max_iterations == 0).
     if bundle is None:
