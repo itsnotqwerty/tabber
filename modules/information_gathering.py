@@ -38,6 +38,7 @@ def gather(
             progress.console.log(f"[dim]{msg}[/dim]")
         elif verbose:
             import click
+
             click.echo(f"  [info] {msg}")
 
     gather_task = None
@@ -72,6 +73,7 @@ def gather(
                         )
                 elif verbose:
                     import click
+
                     click.echo(
                         f"  [{gname}] {len(result.items)} items, "
                         f"{len(result.raw_text)} chars of raw_text"
@@ -84,6 +86,7 @@ def gather(
                     )
                 else:
                     import click
+
                     click.echo(f"  [{gname}] error: {exc}", err=True)
 
     if progress is not None and gather_task is not None:

@@ -79,6 +79,7 @@ def lookup(name: str, verbose: bool, max_iter: int | None) -> None:
         console.print(f"[red]Unexpected error:[/red] {exc}")
         if verbose:
             import traceback
+
             traceback.print_exc()
         sys.exit(1)
 
@@ -94,6 +95,7 @@ def config() -> None:
 def config_set(key: str, value: str) -> None:
     """Set a configuration KEY to VALUE."""
     import config as cfg_module
+
     cfg_module.set_key(key, value)
     click.echo(f"Set {key}.")
 
@@ -102,6 +104,7 @@ def config_set(key: str, value: str) -> None:
 def config_show() -> None:
     """Show the current configuration (secrets are masked)."""
     import config as cfg_module
+
     cfg = cfg_module.load()
     display = cfg_module.masked(cfg)
     table = Table(title="Tabber Config", show_header=True)

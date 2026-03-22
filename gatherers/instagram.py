@@ -6,6 +6,7 @@ gatherer is therefore only useful if the target person's own access token has
 been configured.  It will return empty results (with a note) when the token
 belongs to a different account, and is skipped entirely when no token is set.
 """
+
 from __future__ import annotations
 
 import requests

@@ -25,7 +25,7 @@ class TwitterGatherer(BaseGatherer):
                 query=query,
                 max_results=20,
                 tweet_fields=["created_at", "text", "geo"],
-            ) # type: ignore
+            )  # type: ignore
             if response and response.data:
                 for tweet in response.data:
                     items.append(

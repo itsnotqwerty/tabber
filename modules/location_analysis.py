@@ -3,6 +3,7 @@
 Takes the final OSINTBundle from the identification feedback loop and makes a
 single LLM call to synthesise all gathered data into a LocationResult.
 """
+
 from __future__ import annotations
 
 import json

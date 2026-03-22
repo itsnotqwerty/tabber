@@ -28,8 +28,10 @@ class RedditGatherer(BaseGatherer):
             for submission in reddit.subreddit("all").search(
                 query, sort="new", limit=15
             ):
-                snippet = submission.title + ". " + (
-                    submission.selftext[:200] if submission.selftext else ""
+                snippet = (
+                    submission.title
+                    + ". "
+                    + (submission.selftext[:200] if submission.selftext else "")
                 )
                 items.append(
                     {

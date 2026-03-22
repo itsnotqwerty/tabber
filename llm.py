@@ -1,4 +1,5 @@
 """Thin LLM wrapper — supports OpenAI and Anthropic providers."""
+
 from __future__ import annotations
 import openai
 
@@ -56,6 +57,3 @@ def _anthropic(prompt: str, system: str, cfg: dict) -> str:
         temperature=0.2,
     )
     return response.choices[0].message.content  # type: ignore
-
-
-

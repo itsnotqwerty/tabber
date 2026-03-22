@@ -3,12 +3,13 @@
 Responsibilities:
 1. Disambiguate the raw input name → PersonProfile via LLM.
 2. Drive the feedback loop:
-   a. Generate search hints (LLM).
-   b. Call information_gathering.gather() to collect OSINT.
-   c. Ask LLM whether the bundle contains enough location signal.
-   d. If yes, exit. If no and iterations remain, refine hints and repeat.
+         a. Generate search hints (LLM).
+         b. Call information_gathering.gather() to collect OSINT.
+         c. Ask LLM whether the bundle contains enough location signal.
+         d. If yes, exit. If no and iterations remain, refine hints and repeat.
 3. Return the best OSINTBundle to the caller.
 """
+
 from __future__ import annotations
 
 import json
@@ -125,6 +126,7 @@ def _evaluate_signal(
             progress.console.log(msg)
         else:
             import click
+
             click.echo(msg)
 
     all_text = "\n".join(r.raw_text for r in bundle.results if r.raw_text)
@@ -207,24 +209,32 @@ def run(
     import config as cfg_module
 
     cfg = cfg_module.load()
-    max_iterations: int = max_iter if max_iter is not None else int(cfg.get("max_iterations", 3))
+    max_iterations: int = (
+        max_iter if max_iter is not None else int(cfg.get("max_iterations", 3))
+    )
 
     # --- Disambiguation ---
     task = _spinner_start(progress, f"Identifying [bold]{name}[/bold]...")
     if task is None and verbose:
         import click
+
         click.echo(f"[identification] Disambiguating '{name}'...")
 
     profile = _disambiguate(name)
 
     roles_str = ", ".join(profile.known_roles[:2])
     _spinner_done(
-        progress, task,
-        f"[green]✓[/green] [bold]{profile.name}[/bold]" + (f" ({roles_str})" if roles_str else ""),
+        progress,
+        task,
+        f"[green]✓[/green] [bold]{profile.name}[/bold]"
+        + (f" ({roles_str})" if roles_str else ""),
     )
     if task is None and verbose:
         import click
-        click.echo(f"[identification] → {profile.name} ({', '.join(profile.known_roles)})")
+
+        click.echo(
+            f"[identification] → {profile.name} ({', '.join(profile.known_roles)})"
+        )
 
     bundle: Optional[OSINTBundle] = None
 
@@ -235,6 +245,7 @@ def run(
         htask = _spinner_start(progress, f"Generating search hints...")
         if htask is None and verbose:
             import click
+
             click.echo(f"\n[loop {i + 1}/{max_iterations}] Generating query hints...")
 
         hints = _generate_hints(profile, bundle)
@@ -242,6 +253,7 @@ def run(
         _spinner_done(progress, htask, f"[green]✓[/green] Search hints ready")
         if htask is None and verbose:
             import click
+
             click.echo(f"  hints: {hints}")
             click.echo(f"[loop {i + 1}/{max_iterations}] Gathering OSINT...")
         elif verbose and progress is not None:
@@ -256,6 +268,7 @@ def run(
         etask = _spinner_start(progress, f"Evaluating signal...")
         if etask is None and verbose:
             import click
+
             click.echo(f"[loop {i + 1}/{max_iterations}] Evaluating signal...")
 
         evaluation = _evaluate_signal(bundle, verbose=verbose, progress=progress)
@@ -264,17 +277,22 @@ def run(
 
         if evaluation.confidence >= 0.80:
             _spinner_done(
-                progress, etask,
+                progress,
+                etask,
                 f"[green]✓[/green] Signal confidence {conf_pct} — sufficient",
             )
             if etask is None and verbose:
                 import click
-                click.echo(f"[identification] Signal confidence {conf_pct} at iteration {i + 1}. Verifying...")
+
+                click.echo(
+                    f"[identification] Signal confidence {conf_pct} at iteration {i + 1}. Verifying..."
+                )
 
             # --- Verification pass ---
             vtask = _spinner_start(progress, "Verifying suspected location...")
             if vtask is None and verbose:
                 import click
+
                 click.echo("[identification] Running verification gather...")
 
             verification_hints = _generate_verification_hints(profile, evaluation)
@@ -282,6 +300,7 @@ def run(
                 progress.console.log(f"  verification hints: {verification_hints}")
             elif vtask is None and verbose:
                 import click
+
                 click.echo(f"  verification hints: {verification_hints}")
 
             verification_bundle = information_gathering.gather(
@@ -292,24 +311,29 @@ def run(
                 progress=progress,
             )
             bundle.results.extend(verification_bundle.results)
-            
+
             evaluation = _evaluate_signal(bundle, verbose=verbose, progress=progress)
             bundle.signal_evaluation = evaluation
-            
+
             if evaluation.confidence >= 0.85:
                 _spinner_done(progress, vtask, "[green]✓[/green] Location verified")
                 if vtask is None and verbose:
                     import click
+
                     click.echo("[identification] Verification complete. Exiting loop.")
                 break
         else:
             _spinner_done(
-                progress, etask,
+                progress,
+                etask,
                 f"[yellow]↻[/yellow] Signal confidence {conf_pct} — refining",
             )
             if etask is None and verbose:
                 import click
-                click.echo(f"[identification] Signal confidence {conf_pct} — refining...")
+
+                click.echo(
+                    f"[identification] Signal confidence {conf_pct} — refining..."
+                )
 
     # Return last bundle (may be None only if max_iterations == 0).
     if bundle is None:

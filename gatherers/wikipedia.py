@@ -80,7 +80,10 @@ class WikipediaGatherer(BaseGatherer):
                                 )
                                 if isinstance(val, dict) and "id" in val:
                                     items.append(
-                                        {"source": f"wikidata_{label}", "qid": val["id"]}
+                                        {
+                                            "source": f"wikidata_{label}",
+                                            "qid": val["id"],
+                                        }
                                     )
                                     raw_parts.append(f"wikidata {label}: {val['id']}")
         except Exception:

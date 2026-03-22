@@ -1,9 +1,10 @@
 """Events gatherer — searches for upcoming/recent public appearances via
 DuckDuckGo (no API key required).  Uses two targeted queries:
-  1. General event / appearance search
-  2. Tour dates / schedule search
+        1. General event / appearance search
+        2. Tour dates / schedule search
 Avoids Google scraping (brittle) and Eventbrite API (requires OAuth).
 """
+
 from __future__ import annotations
 
 from gatherers.base import BaseGatherer
@@ -42,6 +43,7 @@ class EventsGatherer(BaseGatherer):
                 break
             if attempt == 0:
                 import time
+
                 time.sleep(2)
 
         return GathererResult(

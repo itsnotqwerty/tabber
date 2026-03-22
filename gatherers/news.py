@@ -33,7 +33,5 @@ class NewsGatherer(BaseGatherer):
             if attempt == 0:
                 time.sleep(2)
 
-        raw_text = "\n".join(
-            f"{i['date']} {i['title']}: {i['body']}" for i in items
-        )
+        raw_text = "\n".join(f"{i['date']} {i['title']}: {i['body']}" for i in items)
         return GathererResult(source_name=self.name, items=items, raw_text=raw_text)
