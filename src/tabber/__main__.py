@@ -144,7 +144,7 @@ def server(host: str | None, port: int | None, reload: bool, webui: bool) -> Non
         uvicorn.run(  # type: ignore
             "tabber.api:create_app",
             factory=True,
-            host=host,
+            host=host,  # type: ignore
             port=port,
             reload=reload,
         )

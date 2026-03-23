@@ -152,7 +152,11 @@ def create_app(webui: bool | None = None) -> FastAPI:
     _app.include_router(api_router)
 
     if webui:
+        from fastapi.staticfiles import StaticFiles
         from fastapi.templating import Jinja2Templates
+
+        _static_dir = Path(__file__).parent / "static"
+        _app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 
         _templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
