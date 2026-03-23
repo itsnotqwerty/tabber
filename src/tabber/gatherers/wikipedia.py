@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import requests
 
-from gatherers.base import BaseGatherer
-from models import GathererResult, PersonProfile
+from tabber.gatherers.base import BaseGatherer
+from tabber.models import GathererResult, PersonProfile
 
 _HEADERS = {"User-Agent": "tabber/1.0 (OSINT research tool)"}
 _TIMEOUT = 10

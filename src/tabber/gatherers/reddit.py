@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import config as cfg_module
-from gatherers.base import BaseGatherer
-from models import GathererResult, PersonProfile
+from tabber import config as cfg_module
+from tabber.gatherers.base import BaseGatherer
+from tabber.models import GathererResult, PersonProfile
 
 
 class RedditGatherer(BaseGatherer):

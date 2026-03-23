@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-import config as cfg_module
-from gatherers.events import EventsGatherer
-from gatherers.instagram import InstagramGatherer
-from gatherers.news import NewsGatherer
-from gatherers.reddit import RedditGatherer
-from gatherers.twitter import TwitterGatherer
-from gatherers.wikipedia import WikipediaGatherer
-from models import GathererResult, OSINTBundle, PersonProfile
+from tabber import config as cfg_module
+from tabber.gatherers.events import EventsGatherer
+from tabber.gatherers.instagram import InstagramGatherer
+from tabber.gatherers.news import NewsGatherer
+from tabber.gatherers.reddit import RedditGatherer
+from tabber.gatherers.twitter import TwitterGatherer
+from tabber.gatherers.wikipedia import WikipediaGatherer
+from tabber.models import GathererResult, OSINTBundle, PersonProfile
 
 _ALL_GATHERERS = [
     NewsGatherer(),

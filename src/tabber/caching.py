@@ -6,9 +6,9 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
-import config as cfg_module
-import sqlite as db_module
-from models import LocationResult, OSINTBundle
+from tabber import config as cfg_module
+from tabber import sqlite as db_module
+from tabber.models import LocationResult, OSINTBundle
 
 _conn = None  # module-level cached connection
 

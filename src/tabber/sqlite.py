@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-from models import LocationResult, OSINTBundle
+from tabber.models import LocationResult, OSINTBundle
 
 _DDL = """
 CREATE TABLE IF NOT EXISTS lookups (

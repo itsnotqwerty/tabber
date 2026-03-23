@@ -3,7 +3,7 @@
 Start with:
     tabber server
 or:
-    uvicorn api:app --host 127.0.0.1 --port 8000
+    uvicorn tabber.api:app --host 127.0.0.1 --port 8000
 """
 
 from __future__ import annotations
@@ -15,10 +15,10 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 
-import caching
-import sqlite as db_module
-from models import LocationResult, LookupResponse
-from modules import identification, location_analysis
+from tabber import caching
+from tabber import sqlite as db_module
+from tabber.models import LocationResult, LookupResponse
+from tabber.modules import identification, location_analysis
 
 app = FastAPI(title="Tabber API", version="1.0.0")
 

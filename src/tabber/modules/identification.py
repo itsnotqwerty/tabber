@@ -14,8 +14,8 @@ from __future__ import annotations
 
 from typing import Optional
 
-import llm
-from models import HintsList, OSINTBundle, PersonProfile, SignalEvaluation
+from tabber import llm
+from tabber.models import HintsList, OSINTBundle, PersonProfile, SignalEvaluation
 
 _SYS_DISAMBIGUATE = (
     "You are an intelligence research assistant. "

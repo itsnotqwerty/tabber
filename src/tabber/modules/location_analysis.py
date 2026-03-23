@@ -6,8 +6,8 @@ single LLM call to synthesise all gathered data into a LocationResult.
 
 from __future__ import annotations
 
-import llm
-from models import LocationResult, OSINTBundle
+from tabber import llm
+from tabber.models import LocationResult, OSINTBundle
 
 _SYSTEM = (
     "You are an expert intelligence analyst specialising in open-source intelligence "

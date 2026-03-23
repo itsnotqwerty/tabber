@@ -42,8 +42,8 @@ def cli() -> None:
 )
 def lookup(name: str, verbose: bool, max_iter: int | None, no_cache: bool) -> None:
     """Look up the most likely recent location of NAME."""
-    import caching
-    from modules import identification, location_analysis
+    from tabber import caching
+    from tabber.modules import identification, location_analysis
 
     try:
         console.print(f"\n[bold]Tabber[/bold] — looking up [cyan]{name}[/cyan]\n")
@@ -122,7 +122,7 @@ def server(host: str, port: int, reload: bool) -> None:
             "Install it with: pip install tabber[server]"
         )
         sys.exit(1)
-    uvicorn.run("api:app", host=host, port=port, reload=reload)
+    uvicorn.run("tabber.api:app", host=host, port=port, reload=reload)
 
 
 @cli.group()
@@ -135,7 +135,7 @@ def config() -> None:
 @click.argument("value")
 def config_set(key: str, value: str) -> None:
     """Set a configuration KEY to VALUE."""
-    import config as cfg_module
+    from tabber import config as cfg_module
 
     cfg_module.set_key(key, value)
     click.echo(f"Set {key}.")
@@ -144,7 +144,7 @@ def config_set(key: str, value: str) -> None:
 @config.command("show")
 def config_show() -> None:
     """Show the current configuration (secrets are masked)."""
-    import config as cfg_module
+    from tabber import config as cfg_module
 
     cfg = cfg_module.load()
     display = cfg_module.masked(cfg)

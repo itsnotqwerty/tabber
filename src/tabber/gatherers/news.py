@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from gatherers.base import BaseGatherer
-from models import GathererResult, PersonProfile
+from tabber.gatherers.base import BaseGatherer
+from tabber.models import GathererResult, PersonProfile
 
 
 class NewsGatherer(BaseGatherer):

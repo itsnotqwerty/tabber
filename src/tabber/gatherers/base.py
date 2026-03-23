@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from models import GathererResult, PersonProfile
+from tabber.models import GathererResult, PersonProfile
 
 
 class BaseGatherer(ABC):
