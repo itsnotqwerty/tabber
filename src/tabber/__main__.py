@@ -135,7 +135,7 @@ def server(host: str | None, port: int | None, reload: bool) -> None:
             "Install it with: pip install tabber[server]"
         )
         sys.exit(1)
-    uvicorn.run("tabber.api:app", host=host, port=port, reload=reload)
+    uvicorn.run("tabber.api:app", host=host, port=port, reload=reload)  # type: ignore
 
 
 @cli.group()
