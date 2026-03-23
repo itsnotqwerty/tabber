@@ -19,6 +19,10 @@ _SECRET_KEYS = {
 _DEFAULTS: dict[str, Any] = {
     "max_iterations": 3,
     "llm_provider": "openai",
+    "cache_ttl_hours": 24,
+    "db_path": str(Path.home() / ".tabber" / "results.db"),
+    "server_host": "127.0.0.1",
+    "server_port": 8000,
 }
 
 

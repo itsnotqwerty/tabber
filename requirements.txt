@@ -1,8 +1,0 @@
-click>=8.1
-pydantic>=2.0
-openai>=1.0
-ddgs>=6.0
-requests>=2.31
-tweepy>=4.14
-praw>=7.7
-rich>=13.0

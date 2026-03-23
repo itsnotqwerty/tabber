@@ -12,6 +12,10 @@ class PersonProfile(BaseModel):
     disambiguation_notes: str = ""
 
 
+class HintsList(BaseModel):
+    hints: list[str]
+
+
 class GathererResult(BaseModel):
     source_name: str
     items: list[dict] = []
@@ -35,3 +39,11 @@ class LocationResult(BaseModel):
     confidence: float
     reasoning: str
     sources: list[str] = []
+
+
+class LookupResponse(BaseModel):
+    query_name: str
+    canon_name: str
+    result: LocationResult
+    cached: bool
+    timestamp: str

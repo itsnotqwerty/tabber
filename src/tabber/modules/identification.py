@@ -12,11 +12,10 @@ Responsibilities:
 
 from __future__ import annotations
 
-import json
 from typing import Optional
 
 import llm
-from models import OSINTBundle, PersonProfile, SignalEvaluation
+from models import HintsList, OSINTBundle, PersonProfile, SignalEvaluation
 
 _SYS_DISAMBIGUATE = (
     "You are an intelligence research assistant. "
@@ -27,7 +26,7 @@ _SYS_DISAMBIGUATE = (
 _SYS_HINTS = (
     "You are an intelligence research assistant. "
     "Generate targeted search query hints to locate a public figure. "
-    "Respond ONLY with a valid JSON array of strings."
+    "Respond ONLY with a valid JSON object."
 )
 
 _SYS_EVALUATE = (
@@ -37,15 +36,6 @@ _SYS_EVALUATE = (
     "recent travel mentions, and confirmed public appearances all contribute positively. "
     "Respond ONLY with a valid JSON object."
 )
-
-
-def _parse_json(text: str):
-    text = text.strip()
-    if text.startswith("```"):
-        lines = text.splitlines()
-        inner = lines[1:-1] if lines[-1].strip() == "```" else lines[1:]
-        text = "\n".join(inner)
-    return json.loads(text)
 
 
 def _disambiguate(name: str) -> PersonProfile:
@@ -60,8 +50,7 @@ Return a JSON object with these exact fields:
 Example:
 {{"name": "Elon Musk", "aliases": ["@elonmusk"], "known_roles": ["CEO of Tesla", "CEO of SpaceX", "owner of X"], "disambiguation_notes": "South African-born American entrepreneur and businessman."}}"""
 
-    response = llm.complete(prompt, system=_SYS_DISAMBIGUATE)
-    return PersonProfile(**_parse_json(response))
+    return llm.complete(prompt, system=_SYS_DISAMBIGUATE, response_format=PersonProfile)
 
 
 def _generate_hints(
@@ -85,12 +74,10 @@ Notes: {profile.disambiguation_notes}
 Prior OSINT data:
 {context}
 
-Return a JSON array of exactly 5 short search hint strings optimised for news and social media.
-Example: ["visited Texas", "appearance NYC", "conference Dubai", "spotted London", "tour Europe"]"""
+Return a JSON object with a "hints" field containing exactly 5 short search hint strings optimised for news and social media.
+Example: {{"hints": ["visited Texas", "appearance NYC", "conference Dubai", "spotted London", "tour Europe"]}}"""
 
-    response = llm.complete(prompt, system=_SYS_HINTS)
-    hints = _parse_json(response)
-    return hints if isinstance(hints, list) else []
+    return llm.complete(prompt, system=_SYS_HINTS, response_format=HintsList).hints
 
 
 def _generate_verification_hints(
@@ -108,12 +95,10 @@ with additional independent evidence. Focus on:
 - Official schedules, announcements, or events tied to that place
 - Confirmed locations of events the person is known to be attending
 
-Return a JSON array of exactly 5 short search hint strings.
-Example: ["confirmed Austin March 2026", "Gigafactory Texas sighting", "SpaceX Boca Chica appearance", "Superbowl 2026 location", "Elon Musk conference Texas"]"""
+Return a JSON object with a "hints" field containing exactly 5 short search hint strings.
+Example: {{"hints": ["confirmed Austin March 2026", "Gigafactory Texas sighting", "SpaceX Boca Chica appearance", "Superbowl 2026 location", "Elon Musk conference Texas"]}}"""
 
-    response = llm.complete(prompt, system=_SYS_HINTS)
-    hints = _parse_json(response)
-    return hints if isinstance(hints, list) else []
+    return llm.complete(prompt, system=_SYS_HINTS, response_format=HintsList).hints
 
 
 def _evaluate_signal(
@@ -151,14 +136,12 @@ recent travel mentions, and confirmed public appearances all count.
 Respond with JSON: {{"confidence": <float 0.0-1.0>, "reason": "brief explanation"}}
 Example: {{"confidence": 0.87, "reason": "Multiple recent articles place the subject in London."}}"""
 
-    response = llm.complete(prompt, system=_SYS_EVALUATE)
-
-    _log(f"[signal-eval] LLM raw response: {response!r}")
-
     try:
-        data = _parse_json(response)
-    except (json.JSONDecodeError, ValueError) as exc:
-        _log(f"[signal-eval] JSON parse failed ({exc}); raw: {response!r}")
+        result = llm.complete(
+            prompt, system=_SYS_EVALUATE, response_format=SignalEvaluation
+        )
+    except Exception as exc:
+        _log(f"[signal-eval] LLM call or parse failed ({exc})")
         # Substantial text present — assume workable confidence rather than burn another iteration.
         assumed = 0.85 if len(all_text) > 500 else 0.0
         return SignalEvaluation(
@@ -166,23 +149,17 @@ Example: {{"confidence": 0.87, "reason": "Multiple recent articles place the sub
             reason=f"LLM response unparseable; confidence assumed from text volume ({len(all_text)} chars)",
         )
 
-    if "confidence" not in data:
-        _log(
-            f"[signal-eval] 'confidence' key missing from response; "
-            f"got keys: {list(data.keys())}"
-        )
-        return SignalEvaluation(
-            confidence=0.0,
-            reason=f"Unexpected LLM response keys: {list(data.keys())}",
-        )
+    _log(
+        f"[signal-eval] raw confidence={result.confidence!r}, reason={result.reason!r}"
+    )
 
-    raw_conf = float(data["confidence"])
+    raw_conf = result.confidence
     # Normalise in case the LLM returns 0–100 despite instructions.
     if raw_conf > 1.0:
         raw_conf /= 100.0
     confidence = max(0.0, min(1.0, raw_conf))
 
-    return SignalEvaluation(confidence=confidence, reason=str(data.get("reason", "")))
+    return SignalEvaluation(confidence=confidence, reason=result.reason)
 
 
 def _spinner_start(progress, description: str):

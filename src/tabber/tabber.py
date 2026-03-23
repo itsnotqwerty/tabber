@@ -35,12 +35,34 @@ def cli() -> None:
     type=int,
     help="Override max feedback loop iterations (default: from config, usually 3).",
 )
-def lookup(name: str, verbose: bool, max_iter: int | None) -> None:
+@click.option(
+    "--no-cache",
+    is_flag=True,
+    help="Skip cache and always run a fresh lookup.",
+)
+def lookup(name: str, verbose: bool, max_iter: int | None, no_cache: bool) -> None:
     """Look up the most likely recent location of NAME."""
+    import caching
     from modules import identification, location_analysis
 
     try:
         console.print(f"\n[bold]Tabber[/bold] — looking up [cyan]{name}[/cyan]\n")
+
+        if not no_cache:
+            cached = caching.get_cached(name)
+            if cached is not None:
+                console.print(
+                    Panel.fit(
+                        f"[bold]Location:[/bold]   {cached.location}\n"
+                        f"[bold]Confidence:[/bold] {cached.confidence:.0%}\n"
+                        f"[bold]Reasoning:[/bold]  {cached.reasoning}\n"
+                        f"[bold]Sources:[/bold]    {', '.join(cached.sources)}",
+                        title=f"[bold]{name}[/bold] [dim](cached)[/dim]",
+                        border_style="blue",
+                    )
+                )
+                return
+
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -54,6 +76,8 @@ def lookup(name: str, verbose: bool, max_iter: int | None) -> None:
                 name, progress=progress, verbose=verbose, max_iter=max_iter
             )
             result = location_analysis.analyse(bundle, progress=progress)
+
+        caching.store(name, bundle, result)
 
         if result.confidence >= 0.7:
             conf_style = "green"
@@ -82,6 +106,23 @@ def lookup(name: str, verbose: bool, max_iter: int | None) -> None:
 
             traceback.print_exc()
         sys.exit(1)
+
+
+@cli.command()
+@click.option("--host", default="127.0.0.1", show_default=True, help="Bind host.")
+@click.option("--port", default=8000, show_default=True, help="Bind port.")
+@click.option("--reload", is_flag=True, help="Auto-reload on file changes (dev mode).")
+def server(host: str, port: int, reload: bool) -> None:
+    """Start the Tabber REST API server."""
+    try:
+        import uvicorn
+    except ImportError:
+        console.print(
+            "[red]Error:[/red] uvicorn is not installed. "
+            "Install it with: pip install tabber[server]"
+        )
+        sys.exit(1)
+    uvicorn.run("api:app", host=host, port=port, reload=reload)
 
 
 @cli.group()
@@ -120,7 +161,7 @@ if __name__ == "__main__":
     # shorthand for `python tabber.py lookup "Name"`.  Find the first non-flag
     # positional argument; if it is not a known subcommand, inject "lookup" at
     # position 1 so all flags are forwarded to the lookup command.
-    _known_subcommands = {"lookup", "config"}
+    _known_subcommands = {"lookup", "config", "server"}
     _positional_args = [a for a in sys.argv[1:] if not a.startswith("-")]
     if _positional_args and _positional_args[0] not in _known_subcommands:
         sys.argv.insert(1, "lookup")

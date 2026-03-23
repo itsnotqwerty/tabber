@@ -6,8 +6,6 @@ single LLM call to synthesise all gathered data into a LocationResult.
 
 from __future__ import annotations
 
-import json
-
 import llm
 from models import LocationResult, OSINTBundle
 
@@ -17,15 +15,6 @@ _SYSTEM = (
     "or most recent physical location of a public figure. Be precise and evidence-based. "
     "Respond ONLY with a valid JSON object."
 )
-
-
-def _parse_json(text: str):
-    text = text.strip()
-    if text.startswith("```"):
-        lines = text.splitlines()
-        inner = lines[1:-1] if lines[-1].strip() == "```" else lines[1:]
-        text = "\n".join(inner)
-    return json.loads(text)
 
 
 def analyse(bundle: OSINTBundle, progress=None) -> LocationResult:
@@ -60,9 +49,7 @@ Return a JSON object with these exact fields:
 Example:
 {{"location": "Austin, Texas, USA", "confidence": 0.82, "reasoning": "Multiple recent news articles place the subject at Gigafactory Texas.", "sources": ["news", "twitter"]}}"""
 
-    response = llm.complete(prompt, system=_SYSTEM)
-    data = _parse_json(response)
-    result = LocationResult(**data)
+    result = llm.complete(prompt, system=_SYSTEM, response_format=LocationResult)
 
     if progress is not None and task is not None:
         progress.update(
