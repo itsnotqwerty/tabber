@@ -9,9 +9,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-import caching
-import sqlite as db_module
-from models import LocationResult, OSINTBundle, GathererResult, PersonProfile
+from tabber import caching
+from tabber import sqlite as db_module
+from tabber.models import LocationResult, OSINTBundle, GathererResult, PersonProfile
 
 
 # ─── setup ────────────────────────────────────────────────────────────────────
@@ -22,7 +22,7 @@ def _fresh_conn(monkeypatch, tmp_path):
     """Point caching at a temp DB for each test."""
     db_path = str(tmp_path / "api_test.db")
     monkeypatch.setattr(
-        "config.load",
+        "tabber.config.load",
         lambda: {"cache_ttl_hours": 24, "db_path": db_path},
     )
     caching._reset_conn()

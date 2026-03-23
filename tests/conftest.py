@@ -1,9 +1,10 @@
 """Shared pytest fixtures for the tabber test suite."""
+
 from __future__ import annotations
 
 import pytest
 
-from models import (
+from tabber.models import (
     GathererResult,
     HintsList,
     LocationResult,

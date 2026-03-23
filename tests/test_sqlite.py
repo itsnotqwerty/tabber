@@ -7,8 +7,8 @@ import sqlite3
 
 import pytest
 
-import sqlite as db_module
-from models import LocationResult, OSINTBundle, PersonProfile, GathererResult
+from tabber import sqlite as db_module
+from tabber.models import LocationResult, OSINTBundle, PersonProfile, GathererResult
 
 
 # ─── fixtures ─────────────────────────────────────────────────────────────────

@@ -1,10 +1,11 @@
 """Tests for modules/location_analysis.py."""
+
 from __future__ import annotations
 
 from unittest.mock import patch
 
-from models import GathererResult, LocationResult, OSINTBundle, PersonProfile
-from modules import location_analysis
+from tabber.models import GathererResult, LocationResult, OSINTBundle, PersonProfile
+from tabber.modules import location_analysis
 
 
 class TestAnalyse:
@@ -15,7 +16,7 @@ class TestAnalyse:
             reasoning="Multiple sources confirmed.",
             sources=["news"],
         )
-        with patch("llm.complete", return_value=expected):
+        with patch("tabber.llm.complete", return_value=expected):
             result = location_analysis.analyse(bundle)
         assert result.location == "Paris, France"
         assert result.confidence == 0.85
@@ -24,7 +25,7 @@ class TestAnalyse:
         expected = LocationResult(
             location="NYC", confidence=0.5, reasoning="x", sources=[]
         )
-        with patch("llm.complete", return_value=expected) as mock_complete:
+        with patch("tabber.llm.complete", return_value=expected) as mock_complete:
             location_analysis.analyse(bundle)
         assert mock_complete.call_args.kwargs["response_format"] is LocationResult
 
@@ -32,7 +33,7 @@ class TestAnalyse:
         expected = LocationResult(
             location="NYC", confidence=0.5, reasoning="x", sources=[]
         )
-        with patch("llm.complete", return_value=expected) as mock_complete:
+        with patch("tabber.llm.complete", return_value=expected) as mock_complete:
             location_analysis.analyse(bundle)
         prompt = mock_complete.call_args.args[0]
         assert bundle.person.name in prompt
@@ -41,7 +42,7 @@ class TestAnalyse:
         expected = LocationResult(
             location="NYC", confidence=0.5, reasoning="x", sources=[]
         )
-        with patch("llm.complete", return_value=expected) as mock_complete:
+        with patch("tabber.llm.complete", return_value=expected) as mock_complete:
             location_analysis.analyse(bundle)
         prompt = mock_complete.call_args.args[0]
         # The fixture's gatherer_result raw_text contains "Paris conference"
@@ -52,7 +53,7 @@ class TestAnalyse:
         expected = LocationResult(
             location="Unknown", confidence=0.1, reasoning="No data.", sources=[]
         )
-        with patch("llm.complete", return_value=expected) as mock_complete:
+        with patch("tabber.llm.complete", return_value=expected) as mock_complete:
             result = location_analysis.analyse(empty_bundle)
         assert result.location == "Unknown"
         assert "no data gathered" in mock_complete.call_args.args[0].lower()
@@ -66,7 +67,7 @@ class TestAnalyse:
         expected = LocationResult(
             location="London", confidence=0.7, reasoning="x", sources=["news"]
         )
-        with patch("llm.complete", return_value=expected) as mock_complete:
+        with patch("tabber.llm.complete", return_value=expected) as mock_complete:
             location_analysis.analyse(multi_bundle)
         prompt = mock_complete.call_args.args[0]
         assert "News text." in prompt

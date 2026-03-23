@@ -1,4 +1,5 @@
 """Tests for llm.py — OpenAI and Anthropic provider routing, response_format."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
@@ -26,14 +27,14 @@ def _parsed_response(obj) -> MagicMock:
 
 def _cfg_openai(monkeypatch) -> None:
     monkeypatch.setattr(
-        "config.load",
+        "tabber.config.load",
         lambda: {"llm_provider": "openai", "openai_api_key": "sk-test"},
     )
 
 
 def _cfg_anthropic(monkeypatch) -> None:
     monkeypatch.setattr(
-        "config.load",
+        "tabber.config.load",
         lambda: {"llm_provider": "anthropic", "anthropic_api_key": "sk-ant-test"},
     )
 
@@ -81,7 +82,7 @@ class TestOpenAIPlainText:
         assert msgs[0]["role"] == "user"
 
     def test_missing_api_key_raises_runtime_error(self, monkeypatch):
-        monkeypatch.setattr("config.load", lambda: {"llm_provider": "openai"})
+        monkeypatch.setattr("tabber.config.load", lambda: {"llm_provider": "openai"})
         with pytest.raises(RuntimeError, match="openai_api_key"):
             llm.complete("test")
 
@@ -140,7 +141,7 @@ class TestAnthropicPlainText:
         assert result == "hello"
 
     def test_missing_api_key_raises_runtime_error(self, monkeypatch):
-        monkeypatch.setattr("config.load", lambda: {"llm_provider": "anthropic"})
+        monkeypatch.setattr("tabber.config.load", lambda: {"llm_provider": "anthropic"})
         with pytest.raises(RuntimeError, match="anthropic_api_key"):
             llm.complete("test")
 

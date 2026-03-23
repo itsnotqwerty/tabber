@@ -182,8 +182,8 @@ def run(
     max_iter: Optional[int] = None,
     progress=None,
 ) -> OSINTBundle:
-    from modules import information_gathering
-    import config as cfg_module
+    from tabber.modules import information_gathering
+    from tabber import config as cfg_module
 
     cfg = cfg_module.load()
     max_iterations: int = (

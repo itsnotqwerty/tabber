@@ -109,11 +109,24 @@ def lookup(name: str, verbose: bool, max_iter: int | None, no_cache: bool) -> No
 
 
 @cli.command()
-@click.option("--host", default="127.0.0.1", show_default=True, help="Bind host.")
-@click.option("--port", default=8000, show_default=True, help="Bind port.")
+@click.option(
+    "--host", default=None, help="Bind host (default: from config, usually 127.0.0.1)."
+)
+@click.option(
+    "--port",
+    default=None,
+    type=int,
+    help="Bind port (default: from config, usually 8000).",
+)
 @click.option("--reload", is_flag=True, help="Auto-reload on file changes (dev mode).")
-def server(host: str, port: int, reload: bool) -> None:
+def server(host: str | None, port: int | None, reload: bool) -> None:
     """Start the Tabber REST API server."""
+    from tabber import config as cfg_module
+
+    cfg = cfg_module.load()
+    host = host or cfg.get("server_host", "127.0.0.1")
+    port = port or int(cfg.get("server_port", 8000))
+
     try:
         import uvicorn
     except ImportError:

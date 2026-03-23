@@ -20,7 +20,7 @@ def complete(prompt: str, system: str = ..., *, response_format: type[T]) -> T: 
 
 def complete(prompt: str, system: str = "", *, response_format=None):
     """Send a prompt to the configured LLM provider and return the response text."""
-    import config as cfg_module
+    from tabber import config as cfg_module
 
     cfg = cfg_module.load()
     provider = cfg.get("llm_provider", "openai")

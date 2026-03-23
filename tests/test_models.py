@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from models import (
+from tabber.models import (
     GathererResult,
     HintsList,
     LocationResult,

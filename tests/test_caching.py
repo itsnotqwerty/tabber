@@ -8,9 +8,9 @@ from unittest.mock import patch
 
 import pytest
 
-import caching
-import sqlite as db_module
-from models import LocationResult, OSINTBundle, GathererResult
+from tabber import caching
+from tabber import sqlite as db_module
+from tabber.models import LocationResult, OSINTBundle, GathererResult
 
 
 # ─── fixtures ─────────────────────────────────────────────────────────────────
@@ -21,7 +21,7 @@ def _fresh_conn(monkeypatch, tmp_path):
     """Redirect caching to a temp DB and reset module-level connection before each test."""
     db_path = str(tmp_path / "test_cache.db")
     monkeypatch.setattr(
-        "config.load",
+        "tabber.config.load",
         lambda: {
             "cache_ttl_hours": 24,
             "db_path": db_path,
@@ -75,7 +75,7 @@ class TestGetCached:
             return old_time + timedelta(hours=48)  # effectively now is 48h later
 
         # Patch at the caching module level
-        with patch("caching.datetime") as mock_dt:
+        with patch("tabber.caching.datetime") as mock_dt:
             mock_dt.fromisoformat.side_effect = original_fromisoformat
             mock_dt.now.return_value = datetime.now(timezone.utc) + timedelta(hours=48)
             mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
@@ -97,7 +97,7 @@ class TestGetCached:
     def test_ttl_zero_always_stale(self, bundle, result, monkeypatch, tmp_path):
         db_path = str(tmp_path / "zero_ttl.db")
         monkeypatch.setattr(
-            "config.load",
+            "tabber.config.load",
             lambda: {"cache_ttl_hours": 0, "db_path": db_path},
         )
         caching._reset_conn()
