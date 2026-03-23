@@ -242,3 +242,32 @@ class TestRun:
 
         assert result.signal_evaluation is not None
         assert result.signal_evaluation.confidence == pytest.approx(0.3)
+
+    def test_prior_bundle_used_as_initial_hint_context(self, person, bundle):
+        """When prior_bundle is provided, first hint generation receives it as context."""
+        hints_obj = HintsList(hints=["h1", "h2", "h3", "h4", "h5"])
+        eval_low = SignalEvaluation(confidence=0.2, reason="not enough")
+        gather_result = GathererResult(source_name="news", raw_text="Paris trip.")
+        bundle_out = OSINTBundle(person=person, results=[gather_result], iteration=2)
+
+        captured_hints_calls = []
+
+        def _side_effect(prompt, system="", *, response_format=None):
+            if response_format is PersonProfile:
+                return person
+            if response_format is HintsList:
+                captured_hints_calls.append(prompt)
+                return hints_obj
+            if response_format is SignalEvaluation:
+                return eval_low
+            return ""
+
+        with patch("tabber.llm.complete", side_effect=_side_effect), patch(
+            "tabber.modules.information_gathering.gather", return_value=bundle_out
+        ):
+            run("Jane Doe", max_iter=1, prior_bundle=bundle)
+
+        # The fixture bundle's gatherer_result raw_text should appear in the first hints prompt
+        assert any(
+            "Paris conference" in call for call in captured_hints_calls
+        ), "prior_bundle raw_text should seed the first hints prompt"

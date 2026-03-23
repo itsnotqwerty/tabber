@@ -70,25 +70,65 @@ class TestHealth:
 
 
 class TestLookupCached:
-    def test_returns_cached_result(self, client, stored_result):
-        resp = client.post("/lookup", json={"name": "Jane Doe"})
+    """When a cached bundle exists it is used as a starting point for a fresh run."""
+
+    def _make_fresh_result(self):
+        person = PersonProfile(name="Jane Doe", known_roles=["CEO"])
+        bundle = OSINTBundle(person=person, results=[], iteration=2)
+        result = LocationResult(
+            location="Paris, France",
+            confidence=0.90,
+            reasoning="Enriched result.",
+            sources=["news"],
+        )
+        return bundle, result
+
+    def test_prior_bundle_passed_to_identification(self, client, stored_result):
+        bundle, result = self._make_fresh_result()
+        with (
+            patch("api.identification.run", return_value=bundle) as mock_run,
+            patch("api.location_analysis.analyse", return_value=result),
+        ):
+            resp = client.post("/lookup", json={"name": "Jane Doe"})
         assert resp.status_code == 200
-        body = resp.json()
-        assert body["cached"] is True
-        assert body["result"]["location"] == "Paris, France"
+        assert mock_run.call_args.kwargs.get("prior_bundle") is not None
+
+    def test_returns_fresh_not_cached(self, client, stored_result):
+        bundle, result = self._make_fresh_result()
+        with (
+            patch("api.identification.run", return_value=bundle),
+            patch("api.location_analysis.analyse", return_value=result),
+        ):
+            resp = client.post("/lookup", json={"name": "Jane Doe"})
+        assert resp.status_code == 200
+        assert resp.json()["cached"] is False
 
     def test_query_name_echoed(self, client, stored_result):
-        resp = client.post("/lookup", json={"name": "Jane Doe"})
+        bundle, result = self._make_fresh_result()
+        with (
+            patch("api.identification.run", return_value=bundle),
+            patch("api.location_analysis.analyse", return_value=result),
+        ):
+            resp = client.post("/lookup", json={"name": "Jane Doe"})
         assert resp.json()["query_name"] == "Jane Doe"
 
     def test_canon_name_in_response(self, client, stored_result):
-        resp = client.post("/lookup", json={"name": "Jane Doe"})
+        bundle, result = self._make_fresh_result()
+        with (
+            patch("api.identification.run", return_value=bundle),
+            patch("api.location_analysis.analyse", return_value=result),
+        ):
+            resp = client.post("/lookup", json={"name": "Jane Doe"})
         assert resp.json()["canon_name"] == "Jane Doe"
 
     def test_case_insensitive_cache_hit(self, client, stored_result):
-        resp = client.post("/lookup", json={"name": "jane doe"})
+        bundle, result = self._make_fresh_result()
+        with (
+            patch("api.identification.run", return_value=bundle),
+            patch("api.location_analysis.analyse", return_value=result),
+        ):
+            resp = client.post("/lookup", json={"name": "jane doe"})
         assert resp.status_code == 200
-        assert resp.json()["cached"] is True
 
 
 # ─── /lookup (fresh path) ─────────────────────────────────────────────────────

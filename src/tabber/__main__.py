@@ -49,19 +49,13 @@ def lookup(name: str, verbose: bool, max_iter: int | None, no_cache: bool) -> No
         console.print(f"\n[bold]Tabber[/bold] — looking up [cyan]{name}[/cyan]\n")
 
         if not no_cache:
-            cached = caching.get_cached(name)
+            cached = caching.get_cached_bundle(name)
             if cached is not None:
                 console.print(
-                    Panel.fit(
-                        f"[bold]Location:[/bold]   {cached.location}\n"
-                        f"[bold]Confidence:[/bold] {cached.confidence:.0%}\n"
-                        f"[bold]Reasoning:[/bold]  {cached.reasoning}\n"
-                        f"[bold]Sources:[/bold]    {', '.join(cached.sources)}",
-                        title=f"[bold]{name}[/bold] [dim](cached)[/dim]",
-                        border_style="blue",
-                    )
+                    "[dim]Enriching from cached OSINT data...[/dim]\n"
                 )
-                return
+        else:
+            cached = None
 
         with Progress(
             SpinnerColumn(),
@@ -73,7 +67,8 @@ def lookup(name: str, verbose: bool, max_iter: int | None, no_cache: bool) -> No
             transient=False,
         ) as progress:
             bundle = identification.run(
-                name, progress=progress, verbose=verbose, max_iter=max_iter
+                name, progress=progress, verbose=verbose, max_iter=max_iter,
+                prior_bundle=cached,
             )
             result = location_analysis.analyse(bundle, progress=progress)
 

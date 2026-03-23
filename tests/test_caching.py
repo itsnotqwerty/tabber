@@ -125,6 +125,38 @@ class TestStore:
         assert len(rows) == 2
 
 
+# ─── get_cached_bundle ───────────────────────────────────────────────────────
+
+
+class TestGetCachedBundle:
+    def test_returns_none_when_no_entry(self):
+        assert caching.get_cached_bundle("Nobody") is None
+
+    def test_returns_bundle_when_fresh(self, bundle, result):
+        caching.store("Jane Doe", bundle, result)
+        cached = caching.get_cached_bundle("Jane Doe")
+        assert cached is not None
+        assert cached.person.name == bundle.person.name
+
+    def test_returns_none_when_expired(self, bundle, result):
+        caching.store("Jane Doe", bundle, result)
+        with patch("tabber.caching.datetime") as mock_dt:
+            from datetime import datetime as _dt
+            mock_dt.fromisoformat.side_effect = _dt.fromisoformat
+            mock_dt.now.return_value = _dt.now(timezone.utc) + timedelta(hours=48)
+            assert caching.get_cached_bundle("Jane Doe") is None
+
+    def test_case_insensitive_lookup(self, bundle, result):
+        caching.store("Jane Doe", bundle, result)
+        assert caching.get_cached_bundle("jane doe") is not None
+
+    def test_bundle_fields_preserved(self, bundle, result):
+        caching.store("Jane Doe", bundle, result)
+        cached = caching.get_cached_bundle("Jane Doe")
+        assert cached.person.name == bundle.person.name  # type: ignore
+        assert len(cached.results) == len(bundle.results)  # type: ignore
+
+
 # ─── invalidate ───────────────────────────────────────────────────────────────
 
 

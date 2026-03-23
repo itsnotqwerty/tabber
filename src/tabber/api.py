@@ -17,7 +17,7 @@ from pydantic import BaseModel
 
 from tabber import caching
 from tabber import sqlite as db_module
-from tabber.models import LocationResult, LookupResponse
+from tabber.models import LookupResponse
 from tabber.modules import identification, location_analysis
 
 app = FastAPI(title="Tabber API", version="1.0.0")
@@ -80,27 +80,13 @@ def lookup(req: LookupRequest) -> LookupResponse:
     if not name:
         raise HTTPException(status_code=422, detail="name must not be empty")
 
-    cached_result: Optional[LocationResult] = None
+    prior_bundle = None
     if not req.no_cache:
-        cached_result = caching.get_cached(name)
+        prior_bundle = caching.get_cached_bundle(name)
 
-    if cached_result is not None:
-        conn = caching._get_conn()
-        row = db_module.get_latest(conn, name)
-        canon_name = row["canon_name"] if row else name
-        return LookupResponse(
-            query_name=name,
-            canon_name=canon_name,
-            result=cached_result,
-            cached=True,
-            timestamp=(
-                row["created_at"] if row else datetime.now(timezone.utc).isoformat()
-            ),
-        )
-
-    # Fresh lookup
+    # Fresh lookup, optionally seeded with cached OSINT data
     try:
-        bundle = identification.run(name)
+        bundle = identification.run(name, prior_bundle=prior_bundle)
         result = location_analysis.analyse(bundle)
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc))

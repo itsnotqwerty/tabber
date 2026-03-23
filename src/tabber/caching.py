@@ -61,6 +61,29 @@ def get_cached(name: str) -> Optional[LocationResult]:
     )
 
 
+def get_cached_bundle(name: str) -> Optional[OSINTBundle]:
+    """Return the stored OSINTBundle for *name* if the cache entry is still fresh, else None."""
+    cfg = cfg_module.load()
+    ttl_hours: int = int(cfg.get("cache_ttl_hours", 24))
+
+    conn = _get_conn()
+    row = db_module.get_latest(conn, name)
+    if row is None:
+        return None
+
+    created_at = datetime.fromisoformat(row["created_at"])
+    if created_at.tzinfo is None:
+        created_at = created_at.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) - created_at > timedelta(hours=ttl_hours):
+        return None
+
+    bundle_json = row["bundle_json"]
+    if not bundle_json:
+        return None
+
+    return OSINTBundle.model_validate_json(bundle_json)
+
+
 def store(query_name: str, bundle: OSINTBundle, result: LocationResult) -> None:
     """Persist a lookup result to the database."""
     conn = _get_conn()

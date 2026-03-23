@@ -181,6 +181,7 @@ def run(
     verbose: bool = False,
     max_iter: Optional[int] = None,
     progress=None,
+    prior_bundle: Optional[OSINTBundle] = None,
 ) -> OSINTBundle:
     from tabber.modules import information_gathering
     from tabber import config as cfg_module
@@ -213,7 +214,7 @@ def run(
             f"[identification] → {profile.name} ({', '.join(profile.known_roles)})"
         )
 
-    bundle: Optional[OSINTBundle] = None
+    bundle: Optional[OSINTBundle] = prior_bundle  # Seed with cached data if available
 
     for i in range(max_iterations):
         # iter_label = f"iter {i + 1}/{max_iterations}"
