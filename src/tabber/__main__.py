@@ -51,9 +51,7 @@ def lookup(name: str, verbose: bool, max_iter: int | None, no_cache: bool) -> No
         if not no_cache:
             cached = caching.get_cached_bundle(name)
             if cached is not None:
-                console.print(
-                    "[dim]Enriching from cached OSINT data...[/dim]\n"
-                )
+                console.print("[dim]Enriching from cached OSINT data...[/dim]\n")
         else:
             cached = None
 
@@ -67,7 +65,10 @@ def lookup(name: str, verbose: bool, max_iter: int | None, no_cache: bool) -> No
             transient=False,
         ) as progress:
             bundle = identification.run(
-                name, progress=progress, verbose=verbose, max_iter=max_iter,
+                name,
+                progress=progress,
+                verbose=verbose,
+                max_iter=max_iter,
                 prior_bundle=cached,
             )
             result = location_analysis.analyse(bundle, progress=progress)

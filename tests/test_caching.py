@@ -142,6 +142,7 @@ class TestGetCachedBundle:
         caching.store("Jane Doe", bundle, result)
         with patch("tabber.caching.datetime") as mock_dt:
             from datetime import datetime as _dt
+
             mock_dt.fromisoformat.side_effect = _dt.fromisoformat
             mock_dt.now.return_value = _dt.now(timezone.utc) + timedelta(hours=48)
             assert caching.get_cached_bundle("Jane Doe") is None
