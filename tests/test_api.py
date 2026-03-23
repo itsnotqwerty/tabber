@@ -32,9 +32,9 @@ def _fresh_conn(monkeypatch, tmp_path):
 
 @pytest.fixture()
 def client():
-    from api import app
+    from api import create_app
 
-    return TestClient(app)
+    return TestClient(create_app())
 
 
 @pytest.fixture()
@@ -61,7 +61,7 @@ def stored_result(tmp_path):
 
 class TestHealth:
     def test_returns_ok(self, client):
-        resp = client.get("/health")
+        resp = client.get("/api/health")
         assert resp.status_code == 200
         assert resp.json() == {"status": "ok"}
 
@@ -89,7 +89,7 @@ class TestLookupCached:
             patch("api.identification.run", return_value=bundle) as mock_run,
             patch("api.location_analysis.analyse", return_value=result),
         ):
-            resp = client.post("/lookup", json={"name": "Jane Doe"})
+            resp = client.post("/api/lookup", json={"name": "Jane Doe"})
         assert resp.status_code == 200
         assert mock_run.call_args.kwargs.get("prior_bundle") is not None
 
@@ -99,7 +99,7 @@ class TestLookupCached:
             patch("api.identification.run", return_value=bundle),
             patch("api.location_analysis.analyse", return_value=result),
         ):
-            resp = client.post("/lookup", json={"name": "Jane Doe"})
+            resp = client.post("/api/lookup", json={"name": "Jane Doe"})
         assert resp.status_code == 200
         assert resp.json()["cached"] is False
 
@@ -109,7 +109,7 @@ class TestLookupCached:
             patch("api.identification.run", return_value=bundle),
             patch("api.location_analysis.analyse", return_value=result),
         ):
-            resp = client.post("/lookup", json={"name": "Jane Doe"})
+            resp = client.post("/api/lookup", json={"name": "Jane Doe"})
         assert resp.json()["query_name"] == "Jane Doe"
 
     def test_canon_name_in_response(self, client, stored_result):
@@ -118,7 +118,7 @@ class TestLookupCached:
             patch("api.identification.run", return_value=bundle),
             patch("api.location_analysis.analyse", return_value=result),
         ):
-            resp = client.post("/lookup", json={"name": "Jane Doe"})
+            resp = client.post("/api/lookup", json={"name": "Jane Doe"})
         assert resp.json()["canon_name"] == "Jane Doe"
 
     def test_case_insensitive_cache_hit(self, client, stored_result):
@@ -127,7 +127,7 @@ class TestLookupCached:
             patch("api.identification.run", return_value=bundle),
             patch("api.location_analysis.analyse", return_value=result),
         ):
-            resp = client.post("/lookup", json={"name": "jane doe"})
+            resp = client.post("/api/lookup", json={"name": "jane doe"})
         assert resp.status_code == 200
 
 
@@ -152,7 +152,9 @@ class TestLookupFresh:
             patch("api.identification.run", return_value=bundle),
             patch("api.location_analysis.analyse", return_value=result),
         ):
-            resp = client.post("/lookup", json={"name": "Jane Doe", "no_cache": True})
+            resp = client.post(
+                "/api/lookup", json={"name": "Jane Doe", "no_cache": True}
+            )
         assert resp.status_code == 200
         body = resp.json()
         assert body["cached"] is False
@@ -163,7 +165,7 @@ class TestLookupFresh:
             patch("api.identification.run", return_value=bundle),
             patch("api.location_analysis.analyse", return_value=result),
         ):
-            resp = client.post("/lookup", json={"name": "Fresh Person"})
+            resp = client.post("/api/lookup", json={"name": "Fresh Person"})
         assert resp.status_code == 200
         # Should now be in cache
         cached = caching.get_cached("Fresh Person")
@@ -171,16 +173,18 @@ class TestLookupFresh:
 
     def test_runtime_error_returns_502(self, client):
         with patch("api.identification.run", side_effect=RuntimeError("LLM down")):
-            resp = client.post("/lookup", json={"name": "Bad Person", "no_cache": True})
+            resp = client.post(
+                "/api/lookup", json={"name": "Bad Person", "no_cache": True}
+            )
         assert resp.status_code == 502
         assert "LLM down" in resp.json()["detail"]
 
     def test_empty_name_returns_422(self, client):
-        resp = client.post("/lookup", json={"name": "   ", "no_cache": True})
+        resp = client.post("/api/lookup", json={"name": "   ", "no_cache": True})
         assert resp.status_code == 422
 
     def test_missing_name_returns_422(self, client):
-        resp = client.post("/lookup", json={})
+        resp = client.post("/api/lookup", json={})
         assert resp.status_code == 422
 
 
@@ -189,12 +193,12 @@ class TestLookupFresh:
 
 class TestListResults:
     def test_empty_returns_empty_list(self, client):
-        resp = client.get("/results")
+        resp = client.get("/api/results")
         assert resp.status_code == 200
         assert resp.json() == []
 
     def test_returns_stored_results(self, client, stored_result):
-        resp = client.get("/results")
+        resp = client.get("/api/results")
         assert resp.status_code == 200
         rows = resp.json()
         assert len(rows) == 1
@@ -209,7 +213,7 @@ class TestListResults:
         )
         caching.store("John Smith", bundle2, result2)
 
-        resp = client.get("/results?limit=1")
+        resp = client.get("/api/results?limit=1")
         assert len(resp.json()) == 1
 
     def test_ordered_newest_first(self, client):
@@ -223,11 +227,11 @@ class TestListResults:
         )
         caching.store("Jane Doe", bundle, r1)
         caching.store("Jane Doe", bundle, r2)
-        rows = client.get("/results").json()
+        rows = client.get("/api/results").json()
         assert rows[0]["location"] == "Paris"
 
     def test_invalid_limit_returns_422(self, client):
-        resp = client.get("/results?limit=0")
+        resp = client.get("/api/results?limit=0")
         assert resp.status_code == 422
 
 
@@ -236,11 +240,11 @@ class TestListResults:
 
 class TestGetResultByName:
     def test_returns_404_when_not_found(self, client):
-        resp = client.get("/results/Unknown%20Person")
+        resp = client.get("/api/results/Unknown%20Person")
         assert resp.status_code == 404
 
     def test_returns_result_for_known_name(self, client, stored_result):
-        resp = client.get("/results/Jane%20Doe")
+        resp = client.get("/api/results/Jane%20Doe")
         assert resp.status_code == 200
         assert resp.json()["location"] == "Paris, France"
 
@@ -255,7 +259,7 @@ class TestGetResultByName:
         )
         caching.store("Jane Doe", bundle, r1)
         caching.store("Jane Doe", bundle, r2)
-        resp = client.get("/results/Jane%20Doe")
+        resp = client.get("/api/results/Jane%20Doe")
         assert resp.json()["location"] == "Paris"
 
 
@@ -264,18 +268,50 @@ class TestGetResultByName:
 
 class TestDeleteResult:
     def test_delete_existing_returns_count(self, client, stored_result):
-        resp = client.delete("/results/Jane%20Doe")
+        resp = client.delete("/api/results/Jane%20Doe")
         assert resp.status_code == 200
         body = resp.json()
         assert body["deleted"] == 1
         assert body["name"] == "Jane Doe"
 
     def test_delete_nonexistent_returns_zero(self, client):
-        resp = client.delete("/results/Nobody")
+        resp = client.delete("/api/results/Nobody")
         assert resp.status_code == 200
         assert resp.json()["deleted"] == 0
 
     def test_result_gone_after_delete(self, client, stored_result):
-        client.delete("/results/Jane%20Doe")
-        resp = client.get("/results/Jane%20Doe")
+        client.delete("/api/results/Jane%20Doe")
+        resp = client.get("/api/results/Jane%20Doe")
+        assert resp.status_code == 404
+
+
+# ─── WebUI dashboard ──────────────────────────────────────────────────────────
+
+
+class TestWebUI:
+    @pytest.fixture()
+    def webui_client(self):
+        from api import create_app
+
+        return TestClient(create_app(webui=True))
+
+    def test_dashboard_returns_html(self, webui_client):
+        resp = webui_client.get("/")
+        assert resp.status_code == 200
+        assert "text/html" in resp.headers["content-type"]
+
+    def test_dashboard_contains_lookup_form(self, webui_client):
+        resp = webui_client.get("/")
+        assert "lookup-form" in resp.text
+
+    def test_api_routes_still_work_with_webui(self, webui_client):
+        resp = webui_client.get("/api/health")
+        assert resp.status_code == 200
+        assert resp.json() == {"status": "ok"}
+
+    def test_root_returns_404_without_webui(self):
+        from api import create_app
+
+        client = TestClient(create_app(webui=False))
+        resp = client.get("/")
         assert resp.status_code == 404

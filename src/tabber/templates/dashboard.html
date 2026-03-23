@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tabber Dashboard</title>
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css"
+  />
+  <style>
+    body { max-width: 920px; margin: 0 auto; padding: 1rem 2rem; }
+    nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid var(--pico-muted-border-color); padding-bottom: 0.75rem; }
+    nav strong { font-size: 1.2rem; }
+    #status-badge { font-size: 0.85rem; opacity: 0.8; }
+    #result-card { margin-top: 1rem; }
+    #result-card dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; margin: 0; }
+    #result-card dt { font-weight: bold; opacity: 0.7; }
+    #result-card dd { margin: 0; }
+    #lookup-spinner, #history-spinner { opacity: 0.6; font-style: italic; }
+    .error-msg { color: var(--pico-color-red-500); }
+    #reasoning-section { display: none; margin-top: 2rem; }
+    #reasoning-section h3 { margin-bottom: 0.4rem; opacity: 0.7; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    #reasoning-text { margin: 0; line-height: 1.6; }
+    table { width: 100%; }
+    th, td { vertical-align: middle; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <strong>Tabber</strong>
+  <span id="status-badge" aria-busy="true">checking health…</span>
+</nav>
+
+<main>
+
+  <!-- ── Lookup tool ───────────────────────────────────────────────── -->
+  <section>
+    <h2>Lookup</h2>
+    <form id="lookup-form">
+      <fieldset role="group">
+        <input
+          type="text"
+          id="lookup-name"
+          name="name"
+          placeholder="Person name…"
+          required
+          autocomplete="off"
+        />
+        <button type="submit">Search</button>
+      </fieldset>
+      <label>
+        <input type="checkbox" id="no-cache" role="switch" />
+        Skip cache
+      </label>
+    </form>
+
+    <p id="lookup-spinner" style="display:none" aria-busy="true">Running lookup…</p>
+    <p id="lookup-error" class="error-msg" style="display:none"></p>
+
+    <article id="result-card" style="display:none">
+      <header><strong id="res-name"></strong></header>
+      <dl>
+        <dt>Location</dt>  <dd id="res-location"></dd>
+        <dt>Confidence</dt><dd id="res-confidence"></dd>
+        <dt>Reasoning</dt> <dd id="res-reasoning"></dd>
+        <dt>Sources</dt>   <dd id="res-sources"></dd>
+      </dl>
+    </article>
+  </section>
+
+  <!-- ── History table ─────────────────────────────────────────────── -->
+  <section style="margin-top: 2rem;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h2 style="margin:0;">History</h2>
+      <button id="refresh-btn" class="outline" style="margin:0;">Refresh</button>
+    </div>
+
+    <p id="history-spinner" aria-busy="true">Loading…</p>
+    <p id="history-error" class="error-msg" style="display:none"></p>
+
+    <div id="history-table-wrap" style="display:none; overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Location</th>
+            <th>Confidence</th>
+            <th>Cached</th>
+            <th>Timestamp (UTC)</th>
+          </tr>
+        </thead>
+        <tbody id="history-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function show(el) { el.style.display = ''; }
+  function hide(el) { el.style.display = 'none'; }
+
+  // ── Health check ─────────────────────────────────────────────────────────
+
+  async function checkHealth() {
+    const badge = document.getElementById('status-badge');
+    try {
+      const r = await fetch('/api/health');
+      const data = await r.json();
+      const ok = data.status === 'ok';
+      badge.textContent = ok ? '● Online' : '● Degraded';
+      badge.style.color = ok
+        ? 'var(--pico-color-green-500)'
+        : 'var(--pico-color-orange-500)';
+    } catch {
+      badge.textContent = '● Offline';
+      badge.style.color = 'var(--pico-color-red-500)';
+    } finally {
+      badge.removeAttribute('aria-busy');
+    }
+  }
+
+  // ── Lookup form ──────────────────────────────────────────────────────────
+
+  document.getElementById('lookup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const name    = document.getElementById('lookup-name').value.trim();
+    const noCache = document.getElementById('no-cache').checked;
+    const spinner = document.getElementById('lookup-spinner');
+    const errEl   = document.getElementById('lookup-error');
+    const card    = document.getElementById('result-card');
+
+    show(spinner);
+    hide(errEl);
+    hide(card);
+
+    try {
+      const r = await fetch('/api/lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, no_cache: noCache }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.detail || r.statusText);
+
+      document.getElementById('res-name').textContent       = data.canon_name;
+      document.getElementById('res-location').textContent   = data.result.location;
+      document.getElementById('res-confidence').textContent =
+        (data.result.confidence * 100).toFixed(0) + '%';
+      document.getElementById('res-reasoning').textContent  = data.result.reasoning;
+      document.getElementById('res-sources').textContent    =
+        data.result.sources.length ? data.result.sources.join(', ') : '—';
+
+      show(card);
+      loadHistory();
+    } catch (err) {
+      errEl.textContent = err.message;
+      show(errEl);
+    } finally {
+      hide(spinner);
+    }
+  });
+
+  // ── History table ────────────────────────────────────────────────────────
+
+  async function loadHistory() {
+    const wrap    = document.getElementById('history-table-wrap');
+    const spinner = document.getElementById('history-spinner');
+    const errEl   = document.getElementById('history-error');
+    const tbody   = document.getElementById('history-body');
+
+    show(spinner);
+    hide(wrap);
+    hide(errEl);
+
+    try {
+      const r = await fetch('/api/results?limit=50');
+      if (!r.ok) throw new Error(r.statusText);
+      const rows = await r.json();
+
+      if (rows.length === 0) {
+        tbody.innerHTML =
+          '<tr><td colspan="5" style="text-align:center;opacity:0.6">No results yet.</td></tr>';
+      } else {
+        tbody.innerHTML = rows.map(row => `
+          <tr>
+            <td>${escHtml(row.query_name)}</td>
+            <td>${escHtml(row.location)}</td>
+            <td>${(row.confidence * 100).toFixed(0)}%</td>
+            <td>${row.cached ? 'yes' : 'no'}</td>
+            <td><small>${escHtml(row.timestamp.replace('T', ' ').slice(0, 19))}</small></td>
+          </tr>`).join('');
+      }
+      show(wrap);
+    } catch (err) {
+      errEl.textContent = err.message;
+      show(errEl);
+    } finally {
+      hide(spinner);
+    }
+  }
+
+  document.getElementById('refresh-btn').addEventListener('click', loadHistory);
+
+  // ── Init ─────────────────────────────────────────────────────────────────
+
+  checkHealth();
+  loadHistory();
+</script>
+
+</body>
+</html>

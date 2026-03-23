@@ -115,8 +115,15 @@ def lookup(name: str, verbose: bool, max_iter: int | None, no_cache: bool) -> No
     help="Bind port (default: from config, usually 8000).",
 )
 @click.option("--reload", is_flag=True, help="Auto-reload on file changes (dev mode).")
-def server(host: str | None, port: int | None, reload: bool) -> None:
+@click.option(
+    "--webui",
+    is_flag=True,
+    help="Enable the web dashboard at the root URL.",
+)
+def server(host: str | None, port: int | None, reload: bool, webui: bool) -> None:
     """Start the Tabber REST API server."""
+    import os
+
     from tabber import config as cfg_module
 
     cfg = cfg_module.load()
@@ -131,7 +138,18 @@ def server(host: str | None, port: int | None, reload: bool) -> None:
             "Install it with: pip install tabber[server]"
         )
         sys.exit(1)
-    uvicorn.run("tabber.api:app", host=host, port=port, reload=reload)  # type: ignore
+
+    if webui:
+        os.environ["TABBER_WEBUI"] = "1"
+        uvicorn.run(  # type: ignore
+            "tabber.api:create_app",
+            factory=True,
+            host=host,
+            port=port,
+            reload=reload,
+        )
+    else:
+        uvicorn.run("tabber.api:app", host=host, port=port, reload=reload)  # type: ignore
 
 
 @cli.group()
