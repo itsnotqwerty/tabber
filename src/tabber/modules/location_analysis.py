@@ -41,7 +41,7 @@ OSINT data:
 {osint_text}
 
 Return a JSON object with these exact fields:
-- location: string (city and country, or more specific if known — e.g. "Austin, Texas, USA")
+- location: string (city and country, or more specific if known — e.g. "Austin, Texas, USA", "Deceased" if they have died, or "Unknown" if there is no location information or they are missing)
 - confidence: float 0.0–1.0 (how confident you are; be conservative)
 - reasoning: string (concise explanation referencing specific evidence from the data)
 - sources: array of strings (source names that contributed; choose from {source_names})
