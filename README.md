@@ -114,6 +114,7 @@ tabber server
 | `--host`   | `127.0.0.1` | Bind address                           |
 | `--port`   | `8000`      | Bind port                              |
 | `--reload` | off         | Auto-reload on code changes (dev mode) |
+| `--webui`  | off         | Enable web dashboard & interface       |
 
 The server uses FastAPI and requires the `[server]` extra (`pip install -e ".[server]"`). Interactive API docs are available at `http://localhost:8000/docs` once the server is running.
 
