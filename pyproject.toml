@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tabber"
-version = "1.0.4"
+version = "1.1.0"
 description = "An OSINT CLI person locator tool"
 authors = [
 	{name = "Sam", email = "sam@gatewaycorporate.org"}
