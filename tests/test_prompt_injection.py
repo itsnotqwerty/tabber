@@ -71,7 +71,9 @@ def person():
 
 @pytest.fixture()
 def signal_eval():
-    return SignalEvaluation(confidence=0.9, reason="Strong evidence from news articles.")
+    return SignalEvaluation(
+        confidence=0.9, reason="Strong evidence from news articles."
+    )
 
 
 @pytest.fixture()
@@ -179,7 +181,9 @@ class TestXMLSandboxing:
         ext_end = prompt.index("</external_data>")
         assert "Jane was spotted in Rome." in prompt[ext_start:ext_end]
 
-    def test_generate_hints_no_prior_bundle_still_has_no_external_data_block(self, person):
+    def test_generate_hints_no_prior_bundle_still_has_no_external_data_block(
+        self, person
+    ):
         """With no prior bundle the placeholder text is used; tags not required."""
         hints_obj = HintsList(hints=["h1", "h2", "h3", "h4", "h5"])
         with patch("tabber.llm.complete", return_value=hints_obj) as mock_complete:
@@ -188,7 +192,9 @@ class TestXMLSandboxing:
         # "(none yet)" sentinel must be present
         assert "(none yet)" in prompt
 
-    def test_evaluate_signal_wraps_osint_text_in_external_data_tags(self, bundle_with_injection):
+    def test_evaluate_signal_wraps_osint_text_in_external_data_tags(
+        self, bundle_with_injection
+    ):
         eval_obj = SignalEvaluation(confidence=0.8, reason="Good signal.")
         with patch("tabber.llm.complete", return_value=eval_obj) as mock_complete:
             _evaluate_signal(bundle_with_injection)
@@ -332,7 +338,9 @@ class TestScreenContent:
             screened_results.append(
                 r.model_copy(update={"raw_text": _screen_content(r.raw_text)})
             )
-        screened_bundle = injected_bundle.model_copy(update={"results": screened_results})
+        screened_bundle = injected_bundle.model_copy(
+            update={"results": screened_results}
+        )
 
         eval_obj = SignalEvaluation(confidence=0.8, reason="London confirmed.")
         with patch("tabber.llm.complete", return_value=eval_obj) as mock_complete:
