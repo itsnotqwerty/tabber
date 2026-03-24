@@ -86,6 +86,10 @@ def lookup(req: LookupRequest) -> LookupResponse:
     name = req.name.strip()
     if not name:
         raise HTTPException(status_code=422, detail="name must not be empty")
+    try:
+        name = identification._sanitize_name(name)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
     prior_bundle = None
     if not req.no_cache:

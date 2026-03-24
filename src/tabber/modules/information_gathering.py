@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from tabber import config as cfg_module
@@ -19,6 +20,30 @@ _ALL_GATHERERS = [
     RedditGatherer(),
     EventsGatherer(),
 ]
+
+# ---------------------------------------------------------------------------
+# Prompt-injection screening
+# ---------------------------------------------------------------------------
+
+_INJECTION_RE = re.compile(
+    r"(ignore\s+(previous|all|the\s+above)\s+instructions?"
+    r"|disregard\s+(previous|all|the\s+above)"
+    r"|you\s+are\s+now"
+    r"|new\s+instructions?\s*:"
+    r"|system\s*:)",
+    re.IGNORECASE,
+)
+
+
+def _screen_content(text: str) -> str:
+    """Redact lines from external sources that appear to contain prompt-injection attempts."""
+    clean_lines = []
+    for line in text.splitlines():
+        if _INJECTION_RE.search(line):
+            clean_lines.append("[REDACTED]")
+        else:
+            clean_lines.append(line)
+    return "\n".join(clean_lines)
 
 
 def gather(
@@ -95,4 +120,11 @@ def gather(
             description=f"[green]✓[/green] Sources searched (iteration {iteration})",
         )
 
-    return OSINTBundle(person=profile, results=results, iteration=iteration)
+    # Screen all gatherer output for prompt-injection patterns before storing.
+    screened: list[GathererResult] = []
+    for r in results:
+        if r.raw_text:
+            r = r.model_copy(update={"raw_text": _screen_content(r.raw_text)})
+        screened.append(r)
+
+    return OSINTBundle(person=profile, results=screened, iteration=iteration)
